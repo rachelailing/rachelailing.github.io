@@ -1,0 +1,350 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// ── EDIT ME ──────────────────────────────────────────────────────────────
+// Your GitHub username (used for the contributions graph + profile link).
+const githubUsername = 'Rachelailing';
+
+// Add / edit your projects here. The first 3 show by default; the rest are
+// revealed when the visitor clicks "Show more". Set `featured: true` on the
+// ones you want highlighted at the top.
+//   - tags:  small tech labels shown under the title
+//   - link:  repo or live-demo URL (leave '' to hide the link)
+const projects = [
+  {
+    title: 'Project One',
+    description:
+      'Short description of your project — what it does, the problem it solves, and what you learned building it.',
+    tags: ['Python', 'PyTorch', 'Computer Vision'],
+    link: '',
+    featured: true,
+  },
+  {
+    title: 'Project Two',
+    description:
+      'Short description of your project — what it does, the problem it solves, and what you learned building it.',
+    tags: ['Unity', 'C#', 'Game Dev'],
+    link: '',
+    featured: true,
+  },
+  {
+    title: 'Project Three',
+    description:
+      'Short description of your project — what it does, the problem it solves, and what you learned building it.',
+    tags: ['Python', 'Machine Learning'],
+    link: '',
+    featured: true,
+  },
+  {
+    title: 'Project Four',
+    description: 'Another project — fill in the details when you are ready.',
+    tags: ['JavaScript', 'Web'],
+    link: '',
+    featured: false,
+  },
+  {
+    title: 'Project Five',
+    description: 'Another project — fill in the details when you are ready.',
+    tags: ['Research'],
+    link: '',
+    featured: false,
+  },
+];
+// ─────────────────────────────────────────────────────────────────────────
+
+const featured = projects.filter((p) => p.featured);
+const others = projects.filter((p) => !p.featured);
+---
+
+<Layout title="Projects · Rachel">
+  <main class="projects">
+    <h1 class="page-title">Projects</h1>
+
+    <!-- GitHub contributions -->
+    <section class="github">
+      <div class="section-head">
+        <h2>GitHub Contributions</h2>
+        <a
+          class="profile-link"
+          href={`https://github.com/${githubUsername}`}
+          target="_blank"
+          rel="noopener noreferrer">@{githubUsername}</a
+        >
+      </div>
+      <div class="stats-row">
+        <img
+          class="stat-card"
+          src={`https://github-readme-stats.vercel.app/api?username=${githubUsername}&show_icons=true&hide_border=true&bg_color=00000000&title_color=ffffff&text_color=ffffff&icon_color=ffffff`}
+          alt={`${githubUsername}'s GitHub stats`}
+          loading="lazy"
+        />
+        <img
+          class="stat-card"
+          src={`https://github-readme-stats.vercel.app/api/top-langs/?username=${githubUsername}&layout=compact&hide_border=true&bg_color=00000000&title_color=ffffff&text_color=ffffff`}
+          alt={`${githubUsername}'s most used languages`}
+          loading="lazy"
+        />
+      </div>
+
+      <div class="contrib-card">
+        <img
+          src={`https://ghchart.rshah.org/8a9e7c/${githubUsername}`}
+          alt={`${githubUsername}'s GitHub contribution graph`}
+          loading="lazy"
+        />
+      </div>
+    </section>
+
+    <!-- Highlighted projects -->
+    <section class="highlights">
+      <h2>Highlights</h2>
+      <div class="grid">
+        {
+          featured.map((p) => (
+            <article class="card">
+              <h3>{p.title}</h3>
+              <p>{p.description}</p>
+              <div class="tags">
+                {p.tags.map((t) => (
+                  <span class="tag">{t}</span>
+                ))}
+              </div>
+              {p.link && (
+                <a
+                  class="card-link"
+                  href={p.link}
+                  target="_blank"
+                  rel="noopener noreferrer">
+                  View project →
+                </a>
+              )}
+            </article>
+          ))
+        }
+      </div>
+
+      {
+        others.length > 0 && (
+          <>
+            <div id="more" class="grid more-grid">
+              {others.map((p) => (
+                <article class="card">
+                  <h3>{p.title}</h3>
+                  <p>{p.description}</p>
+                  <div class="tags">
+                    {p.tags.map((t) => (
+                      <span class="tag">{t}</span>
+                    ))}
+                  </div>
+                  {p.link && (
+                    <a
+                      class="card-link"
+                      href={p.link}
+                      target="_blank"
+                      rel="noopener noreferrer">
+                      View project →
+                    </a>
+                  )}
+                </article>
+              ))}
+            </div>
+
+            <button id="toggle-more" class="show-more">
+              Show more ({others.length})
+            </button>
+          </>
+        )
+      }
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .projects {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3.5rem 2.5rem 5rem;
+  }
+
+  .page-title {
+    font-size: 3.5rem;
+    font-weight: 300;
+    margin-bottom: 2.5rem;
+  }
+
+  h2 {
+    font-size: 1.8rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .profile-link {
+    color: white;
+    text-decoration: none;
+    opacity: 0.85;
+    font-size: 1.1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    transition: opacity 0.2s;
+  }
+
+  .profile-link:hover {
+    opacity: 1;
+  }
+
+  .github {
+    margin-bottom: 3.5rem;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+
+  @media (max-width: 760px) {
+    .stats-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .contrib-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+  }
+
+  .contrib-card img {
+    width: 100%;
+    min-width: 600px;
+    display: block;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+  }
+
+  .more-grid {
+    display: none;
+    margin-top: 1.5rem;
+  }
+
+  .more-grid.open {
+    display: grid;
+  }
+
+  .card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transition: transform 0.2s, background 0.2s;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .card h3 {
+    font-size: 1.4rem;
+    font-weight: 500;
+  }
+
+  .card p {
+    font-size: 1.02rem;
+    line-height: 1.6;
+    opacity: 0.92;
+    flex-grow: 1;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    background: #b0818a;
+    color: white;
+    letter-spacing: 0.02em;
+  }
+
+  .card-link {
+    color: white;
+    text-decoration: none;
+    font-style: italic;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    align-self: flex-start;
+    transition: opacity 0.2s;
+  }
+
+  .card-link:hover {
+    opacity: 0.75;
+  }
+
+  .show-more {
+    margin-top: 2rem;
+    display: block;
+    margin-inline: auto;
+    background: #b0818a;
+    color: white;
+    border: none;
+    border-radius: 999px;
+    padding: 0.75rem 2rem;
+    font-size: 1.05rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .show-more:hover {
+    background: #9c6f78;
+  }
+
+  @media (max-width: 600px) {
+    .page-title {
+      font-size: 2.6rem;
+    }
+  }
+</style>
+
+<script>
+  const btn = document.getElementById('toggle-more');
+  const more = document.getElementById('more');
+
+  btn?.addEventListener('click', () => {
+    const open = more?.classList.toggle('open');
+    if (more) {
+      const count = more.children.length;
+      btn.textContent = open ? 'Show less' : `Show more (${count})`;
+    }
+  });
+</script>

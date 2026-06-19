@@ -1,0 +1,232 @@
+---
+---
+
+<section class="hero">
+  <div class="photo-wrapper">
+    <img src="/profile.jpg" alt="Rachel" class="profile-photo" />
+  </div>
+
+  <div class="content">
+    <h1 class="greeting" aria-label="Hey, Hi"></h1>
+    <h1 class="name" aria-label="I'm Rachel"></h1>
+
+    <p>Currently exploring computer vision, machine learning, building games.</p>
+    <p>
+      This site serves as dumping projects what I learned and also some cool
+      articles and reading I found.
+    </p>
+
+    <p class="cv-line">Download my CV <a href="https://drive.google.com/file/d/1eN_vOywoSeFyfVvaLk6Z4fH4DxpYA3m5/view?usp=sharing" target="_blank" rel="noopener noreferrer">here</a>.</p>
+
+    <p class="reach">You may reach me out through:</p>
+    <div class="social-links">
+      <a href="mailto:rnailing2004@gmail.com" aria-label="Email" class="social-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="3" ry="3"/>
+          <polyline points="2,4 12,13 22,4"/>
+        </svg>
+      </a>
+      <a href="https://www.linkedin.com/in/rachel-ai-ling" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer" class="social-icon linkedin">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+          <rect x="2" y="9" width="4" height="12"/>
+          <circle cx="4" cy="4" r="2"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4rem;
+    padding: 3rem 4rem;
+    min-height: calc(100vh - 52px);
+  }
+
+  .photo-wrapper {
+    flex-shrink: 0;
+    width: 560px;
+  }
+
+  .profile-photo {
+    width: 100%;
+    height: 720px;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 8px;
+    display: block;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.3rem;
+    max-width: 700px;
+  }
+
+  .greeting {
+    font-size: 4.5rem;
+    font-weight: 300;
+    line-height: 1.1;
+    min-height: 1.2em;
+  }
+
+  .name {
+    font-size: 5rem;
+    font-weight: 400;
+    line-height: 1.1;
+    margin-top: -0.5rem;
+    min-height: 1.2em;
+  }
+
+  /* blinking cursor appended via JS */
+  .cursor {
+    display: inline-block;
+    width: 3px;
+    background: white;
+    margin-left: 4px;
+    animation: blink 0.75s step-end infinite;
+    vertical-align: baseline;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+
+  p {
+    font-size: 1.35rem;
+    line-height: 1.7;
+    font-weight: 400;
+  }
+
+  .cv-line a {
+    color: white;
+    font-style: italic;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .reach {
+    margin-top: 0.25rem;
+  }
+
+  .social-links {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: -0.25rem;
+  }
+
+  .social-icon {
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border: 1.5px solid rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    transition: background 0.2s;
+    text-decoration: none;
+  }
+
+  .social-icon:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .social-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .linkedin {
+    background-color: #0a66c2;
+    border-color: #0a66c2;
+  }
+
+  .linkedin:hover {
+    background-color: #004182;
+    border-color: #004182;
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      flex-direction: column;
+      padding: 2.5rem 2rem;
+      align-items: flex-start;
+      gap: 2rem;
+    }
+
+    .photo-wrapper {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .profile-photo {
+      height: 480px;
+    }
+
+    .greeting { font-size: 2.8rem; }
+    .name     { font-size: 3.2rem; }
+    p         { font-size: 1.2rem; }
+  }
+</style>
+
+<script>
+  const greeting = document.querySelector<HTMLElement>('.greeting')!;
+  const name     = document.querySelector<HTMLElement>('.name')!;
+
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  function makeCursor() {
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    cursor.style.height = '0.85em';
+    return cursor;
+  }
+
+  // Type `text` into `el`, character by character, with a blinking cursor.
+  async function typeText(el: HTMLElement, text: string, speed: number) {
+    el.textContent = '';
+    const cursor = makeCursor();
+    el.appendChild(cursor);
+    for (let i = 0; i < text.length; i++) {
+      el.insertBefore(document.createTextNode(text[i]), cursor);
+      await sleep(speed);
+    }
+  }
+
+  // Erase the text in `el` from the end, keeping the cursor at the front.
+  async function eraseText(el: HTMLElement, speed: number) {
+    const cursor = el.querySelector('.cursor');
+    while (el.firstChild && el.firstChild !== cursor) {
+      el.removeChild(el.firstChild);
+      await sleep(speed);
+    }
+  }
+
+  async function loop() {
+    while (true) {
+      await typeText(greeting, 'Hey, Hi', 90);
+      await sleep(200);
+      await typeText(name, "I'm Rachel", 90);
+      await sleep(1800); // hold the full phrase
+
+      await eraseText(name, 45);
+      await sleep(150);
+      await eraseText(greeting, 45);
+      await sleep(400);
+
+      // clear leftover cursors before the next cycle
+      greeting.textContent = '';
+      name.textContent = '';
+    }
+  }
+
+  loop();
+</script>
