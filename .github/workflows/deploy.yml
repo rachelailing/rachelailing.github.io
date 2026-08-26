@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # The reading list is pulled from Goodreads at build time, so rebuild daily
+  # to pick up shelf changes without needing a push. Note GitHub suspends cron
+  # schedules on repos with no activity for 60 days.
+  schedule:
+    - cron: '0 3 * * *'
 
 permissions:
   contents: read

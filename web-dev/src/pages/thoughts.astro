@@ -1,0 +1,346 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { XMLParser } from 'fast-xml-parser';
+
+// ── EDIT ME ──────────────────────────────────────────────────────────────
+// Your Goodreads numeric user id. Find it in your profile URL:
+//   https://www.goodreads.com/user/show/12345678-rachel  ->  '12345678'
+// Your shelves must be public for the feed to return anything.
+const goodreadsUserId = '125179451';
+
+// How many finished books to show.
+const readLimit = 12;
+// ─────────────────────────────────────────────────────────────────────────
+
+interface Book {
+  title: string;
+  author: string;
+  cover: string;
+  link: string;
+  rating: number;
+  readAt: string;
+  published: string;
+}
+
+// Goodreads retired its public API in 2020, but the per-shelf RSS feeds still
+// work. They send no CORS headers, so this runs at build time rather than in
+// the browser; the books end up baked into the static HTML.
+async function fetchShelf(shelf: string, limit: number): Promise<Book[]> {
+  if (!goodreadsUserId) return [];
+
+  const url =
+    `https://www.goodreads.com/review/list_rss/${goodreadsUserId}` +
+    `?shelf=${shelf}&sort=date_read&order=d`;
+
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'rachelailing.me' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const parser = new XMLParser({ ignoreAttributes: false, trimValues: true });
+    const feed = parser.parse(await res.text());
+
+    const raw = feed?.rss?.channel?.item ?? [];
+    const items = Array.isArray(raw) ? raw : [raw];
+
+    return items.slice(0, limit).map((it: Record<string, unknown>) => ({
+      title: String(it.title ?? '').trim(),
+      author: String(it.author_name ?? '').trim(),
+      // The large image is often a placeholder; medium is the reliable one.
+      cover: String(it.book_medium_image_url ?? it.book_image_url ?? '').trim(),
+      link: String(it.link ?? '').trim(),
+      rating: Number(it.user_rating ?? 0),
+      readAt: String(it.user_read_at ?? '').trim(),
+      published: String(it.book_published ?? '').trim(),
+    }));
+  } catch (err) {
+    // A reading list is not worth failing a deploy over.
+    console.warn(`[thoughts] could not load the "${shelf}" shelf:`, err);
+    return [];
+  }
+}
+
+const [reading, read] = await Promise.all([
+  fetchShelf('currently-reading', 6),
+  fetchShelf('read', readLimit),
+]);
+
+const configured = Boolean(goodreadsUserId);
+const profileUrl = `https://www.goodreads.com/user/show/${goodreadsUserId}`;
+
+const formatDate = (s: string) =>
+  s ? new Date(s).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
+---
+
+<Layout title="Thoughts · Rachel">
+  <main class="thoughts">
+    <h1 class="page-title">Thoughts</h1>
+    <p class="intro">
+      What I am reading at the moment, and the books I have finished recently.
+    </p>
+
+    {
+      !configured && (
+        <p class="notice">
+          Not connected yet — add your Goodreads user id to
+          <code>src/pages/thoughts.astro</code> to pull your shelves in.
+        </p>
+      )
+    }
+
+    {
+      configured && reading.length === 0 && read.length === 0 && (
+        <p class="notice">
+          Nothing came back from Goodreads. Check that the user id is right and
+          that your shelves are set to public.
+        </p>
+      )
+    }
+
+    {
+      configured && (reading.length > 0 || read.length > 0) && (
+        <section class="shelf">
+          <h2>Currently reading</h2>
+          {reading.length === 0 && (
+            <p class="empty">
+              Between books at the moment — the next one will show up here.
+            </p>
+          )}
+          <div class="now-grid">
+            {reading.map((b) => (
+              <article class="now">
+                {b.cover && <img class="cover" src={b.cover} alt="" loading="lazy" />}
+                <div class="meta">
+                  <h3>{b.title}</h3>
+                  <p class="author">{b.author}</p>
+                  {b.published && <p class="year">First published {b.published}</p>}
+                  <a href={b.link} target="_blank" rel="noopener noreferrer">
+                    View on Goodreads →
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    {
+      read.length > 0 && (
+        <section class="shelf">
+          <div class="section-head">
+            <h2>Recently finished</h2>
+            <a class="profile-link" href={profileUrl} target="_blank" rel="noopener noreferrer">
+              full shelf
+            </a>
+          </div>
+          <div class="read-grid">
+            {read.map((b) => (
+              <a class="book" href={b.link} target="_blank" rel="noopener noreferrer">
+                {b.cover ? (
+                  <img class="cover" src={b.cover} alt="" loading="lazy" />
+                ) : (
+                  <div class="cover cover-blank">{b.title}</div>
+                )}
+                <p class="book-title">{b.title}</p>
+                <p class="author">{b.author}</p>
+                {b.rating > 0 && (
+                  <p class="rating" aria-label={`Rated ${b.rating} out of 5`}>
+                    {'★'.repeat(b.rating)}
+                    <span class="dim">{'★'.repeat(5 - b.rating)}</span>
+                  </p>
+                )}
+                {b.readAt && <p class="year">{formatDate(b.readAt)}</p>}
+              </a>
+            ))}
+          </div>
+        </section>
+      )
+    }
+  </main>
+</Layout>
+
+<style>
+  .thoughts {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 5vw, 3.5rem) clamp(1.25rem, 5vw, 2.5rem) 5rem;
+  }
+
+  .page-title {
+    font-size: clamp(2.4rem, 5vw, 3.5rem);
+    font-weight: 300;
+    margin-bottom: 0.75rem;
+  }
+
+  .intro {
+    font-size: clamp(1.05rem, 1.2vw, 1.25rem);
+    color: var(--text-secondary);
+    max-width: 60ch;
+    margin-bottom: 2.5rem;
+  }
+
+  .notice {
+    background: var(--surface);
+    border: 1px dashed var(--surface-border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    color: var(--text-secondary);
+  }
+
+  .shelf {
+    margin-bottom: 3.5rem;
+  }
+
+  .empty {
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  h2 {
+    font-size: clamp(1.5rem, 2.2vw, 1.8rem);
+    font-weight: 400;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .profile-link {
+    color: var(--text);
+    opacity: 0.85;
+    text-decoration: none;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .profile-link:hover {
+    opacity: 1;
+  }
+
+  /* ── currently reading ──────────────────────────────────────────────── */
+
+  .now-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .now {
+    display: flex;
+    gap: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  .now .cover {
+    width: 92px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    align-self: flex-start;
+  }
+
+  .now .meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  .now h3 {
+    font-size: 1.15rem;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  .now a {
+    color: var(--text);
+    font-style: italic;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border-bottom: 1px solid var(--surface-border);
+    align-self: flex-start;
+    margin-top: 0.35rem;
+  }
+
+  /* ── finished ───────────────────────────────────────────────────────── */
+
+  .read-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1.75rem 1.25rem;
+  }
+
+  .book {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    transition: transform 200ms var(--theme-ease);
+  }
+
+  .book:hover {
+    transform: translateY(-4px);
+  }
+
+  .book .cover {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+    margin-bottom: 0.4rem;
+  }
+
+  .cover-blank {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    color: var(--text-secondary);
+  }
+
+  .book-title {
+    font-size: 0.95rem;
+    line-height: 1.35;
+    font-weight: 500;
+  }
+
+  .author {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+  }
+
+  .year {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .rating {
+    font-size: 0.85rem;
+    color: var(--toggle-bg);
+    letter-spacing: 0.06em;
+  }
+
+  .rating .dim {
+    opacity: 0.28;
+  }
+
+  @media (max-width: 520px) {
+    .read-grid {
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    }
+  }
+</style>
