@@ -112,7 +112,7 @@ const { title = "Rachel" } = Astro.props;
   :root[data-theme="light"] {
     --bg-base: #fdf7f7;
     --text: #4a2f38;
-    --text-secondary: #9a7d84;
+    --text-secondary: #7d636a;
     --toggle-bg: #f5c3cb;
     --toggle-icon: #4a2f38;
     --pill-bg: #ffffff;
@@ -120,9 +120,9 @@ const { title = "Rachel" } = Astro.props;
     --surface: rgba(255, 255, 255, 0.6);
     --surface-hover: rgba(255, 255, 255, 0.9);
     --surface-border: rgba(74, 47, 56, 0.12);
-    --status-ongoing: #c0803a;
-    --status-done: #4f9c69;
-    --status-idle: #9a7d84;
+    --status-ongoing: #8f5d16;
+    --status-done: #3d7d52;
+    --status-idle: #7d636a;
   }
 
   html {
@@ -133,7 +133,13 @@ const { title = "Rachel" } = Astro.props;
     min-height: 100%;
     width: 100%;
     font-family: 'Jost', sans-serif;
+    /* Jost runs light and geometric; a touch more weight and tracking keeps
+       body copy legible, especially against the pale light-mode background. */
+    font-weight: 400;
+    letter-spacing: 0.008em;
     color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   body {

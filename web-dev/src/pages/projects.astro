@@ -252,6 +252,16 @@ const langsUrl = (t: { title: string; text: string }) =>
     margin-bottom: 1.5rem;
   }
 
+  /* Collapses to nothing if both remote stat cards fail to load. */
+  .stats-row:empty {
+    display: none;
+    margin-bottom: 0;
+  }
+
+  .stats-row:has(.stat-card:only-child) {
+    grid-template-columns: 1fr;
+  }
+
   .stat-card {
     position: relative;
     background: var(--surface);
@@ -477,6 +487,15 @@ const langsUrl = (t: { title: string; text: string }) =>
 </style>
 
 <script>
+  // github-readme-stats is a shared free service and is periodically paused or
+  // rate limited. Drop the card rather than leaving a broken image on the page;
+  // it comes back on its own once the service responds again.
+  document.querySelectorAll<HTMLImageElement>('.stat-card img').forEach((img) => {
+    const drop = () => img.closest('.stat-card')?.remove();
+    img.addEventListener('error', drop);
+    if (img.complete && img.naturalWidth === 0) drop();
+  });
+
   const btn = document.getElementById('toggle-more');
   const more = document.getElementById('more');
 
