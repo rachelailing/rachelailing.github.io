@@ -3,7 +3,18 @@
 
 <section class="hero">
   <div class="photo-wrapper">
-    <img src="/profile.jpg" alt="Rachel" class="profile-photo" />
+    <img
+      src="/profile_light.jpg"
+      alt="Rachel"
+      class="profile-photo photo-light"
+      fetchpriority="high"
+    />
+    <img
+      src="/profile_dark.jpg"
+      alt="Rachel"
+      class="profile-photo photo-dark"
+      fetchpriority="high"
+    />
   </div>
 
   <div class="content">
@@ -42,41 +53,63 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4rem;
-    padding: 3rem 4rem;
-    min-height: calc(100vh - 52px);
+    gap: clamp(1.75rem, 4vw, 5rem);
+    padding: clamp(2rem, 4vw, 4.5rem) clamp(1.25rem, 5vw, 6rem);
+    min-height: calc(100svh - var(--nav-h));
   }
 
+  /* Shrinks with the viewport instead of holding a hard floor, so the text
+     column keeps a readable width when the window is only half a screen. */
   .photo-wrapper {
-    flex-shrink: 0;
-    width: 560px;
+    position: relative;
+    flex: 0 1 clamp(230px, 30vw, 560px);
+    min-width: 0;
   }
 
   .profile-photo {
     width: 100%;
-    height: 720px;
+    aspect-ratio: 3 / 4;
+    height: auto;
     object-fit: cover;
-    object-position: center top;
+    object-position: center 35%;
     border-radius: 8px;
     display: block;
   }
 
+  /* The light photo sits in the flow and sets the box; the dark one is laid
+     over it and fades in, so switching theme dissolves between the two
+     instead of cutting. */
+  .photo-dark {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    opacity: 0;
+    transition: opacity var(--theme-fade) var(--theme-ease);
+  }
+
+  :global(:root[data-theme='dark']) .photo-dark,
+  :global(:root:not([data-theme])) .photo-dark {
+    opacity: 1;
+  }
+
   .content {
+    flex: 1 1 26rem;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 1.3rem;
-    max-width: 700px;
+    gap: 1.15rem;
+    max-width: 46rem;
   }
 
   .greeting {
-    font-size: 4.5rem;
+    font-size: clamp(3rem, 5.2vw, 6rem);
     font-weight: 300;
     line-height: 1.1;
     min-height: 1.2em;
   }
 
   .name {
-    font-size: 5rem;
+    font-size: clamp(3.3rem, 5.8vw, 6.6rem);
     font-weight: 400;
     line-height: 1.1;
     margin-top: -0.5rem;
@@ -87,7 +120,7 @@
   .cursor {
     display: inline-block;
     width: 3px;
-    background: white;
+    background: var(--text);
     margin-left: 4px;
     animation: blink 0.75s step-end infinite;
     vertical-align: baseline;
@@ -99,13 +132,13 @@
   }
 
   p {
-    font-size: 1.35rem;
+    font-size: clamp(1.15rem, 1.3vw, 1.55rem);
     line-height: 1.7;
     font-weight: 400;
   }
 
   .cv-line a {
-    color: white;
+    color: var(--text);
     font-style: italic;
     text-decoration: underline;
     text-underline-offset: 2px;
@@ -123,20 +156,22 @@
   }
 
   .social-icon {
-    color: white;
+    color: var(--text);
     display: flex;
     align-items: center;
     justify-content: center;
     width: 52px;
     height: 52px;
-    border: 1.5px solid rgba(255, 255, 255, 0.8);
+    border: 1.5px solid var(--text);
     border-radius: 10px;
-    transition: background 0.2s;
+    transition: background-color 200ms var(--theme-ease),
+                color var(--theme-fade) var(--theme-ease),
+                border-color var(--theme-fade) var(--theme-ease);
     text-decoration: none;
   }
 
   .social-icon:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: color-mix(in srgb, var(--text) 15%, transparent);
   }
 
   .social-icon svg {
@@ -163,12 +198,10 @@
     }
 
     .photo-wrapper {
+      flex: 0 1 auto;
       width: 100%;
-      max-width: 440px;
-    }
-
-    .profile-photo {
-      height: 480px;
+      max-width: 400px;
+      align-self: center;
     }
 
     .greeting { font-size: 2.8rem; }

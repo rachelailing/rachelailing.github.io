@@ -1,0 +1,497 @@
+---
+// Postcard wall. Reads/writes a `postcards` table in Supabase over its REST
+// API — see web-dev/README.md for the table + policy setup.
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+const configured = Boolean(supabaseUrl && supabaseKey);
+---
+
+<section class="postcards" id="postcards">
+  <h2>Postcards</h2>
+  <p class="intro">
+    I love the idea of people stopping by and leaving a trace. Say hi, tell me
+    what you are building, or leave a little piece of yourself here.
+  </p>
+
+  {
+    !configured && (
+      <p class="notice">
+        The postcard box is not connected yet — add your Supabase keys to
+        <code>web-dev/.env</code> to open it up.
+      </p>
+    )
+  }
+
+  <form class="postcard-form" id="postcard-form" hidden={!configured}>
+    <div class="paper">
+      <textarea
+        id="pc-message"
+        name="message"
+        maxlength="500"
+        required
+        placeholder="Leave a message, ask me anything, or just say hi..."
+      ></textarea>
+
+      <div class="stamp" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M12 21c0-4 2-6 5-7-3-1-5-3-5-7-0 4-2 6-5 7 3 1 5 3 5 7z" />
+        </svg>
+      </div>
+
+      <div class="signature">
+        <input
+          id="pc-name"
+          name="name"
+          type="text"
+          maxlength="40"
+          placeholder="Your name"
+          autocomplete="name"
+        />
+      </div>
+    </div>
+
+    <div class="controls">
+      <label class="anon">
+        <input type="checkbox" id="pc-anon" />
+        <span>Send anonymously</span>
+      </label>
+      <span class="counter" id="pc-counter">0 / 500</span>
+      <button type="submit" id="pc-submit">Send postcard</button>
+    </div>
+
+    <p class="status" id="pc-status" role="status" aria-live="polite"></p>
+  </form>
+
+  <p class="wall-count" id="pc-count"></p>
+  <div class="wall" id="pc-wall"></div>
+</section>
+
+<script define:vars={{ supabaseUrl, supabaseKey, configured }}>
+  if (configured) {
+    const REST = `${supabaseUrl}/rest/v1/postcards`;
+    const headers = {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+    };
+
+    const form = document.getElementById('postcard-form');
+    const messageEl = document.getElementById('pc-message');
+    const nameEl = document.getElementById('pc-name');
+    const anonEl = document.getElementById('pc-anon');
+    const counterEl = document.getElementById('pc-counter');
+    const statusEl = document.getElementById('pc-status');
+    const submitEl = document.getElementById('pc-submit');
+    const wallEl = document.getElementById('pc-wall');
+    const countEl = document.getElementById('pc-count');
+
+    const setStatus = (text, kind) => {
+      statusEl.textContent = text;
+      statusEl.dataset.kind = kind ?? '';
+    };
+
+    messageEl.addEventListener('input', () => {
+      counterEl.textContent = `${messageEl.value.length} / 500`;
+    });
+
+    // Anonymous senders don't get a name field.
+    anonEl.addEventListener('change', () => {
+      nameEl.disabled = anonEl.checked;
+      nameEl.placeholder = anonEl.checked ? 'Anonymous' : 'Your name';
+      if (anonEl.checked) nameEl.value = '';
+    });
+
+    const formatDate = (iso) =>
+      new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    // Build the card with textContent only — these are visitor-written strings.
+    function renderCard(card) {
+      const article = document.createElement('article');
+      article.className = 'pc';
+
+      const body = document.createElement('p');
+      body.className = 'pc-message';
+      body.textContent = card.message;
+
+      const stamp = document.createElement('div');
+      stamp.className = 'pc-stamp';
+      stamp.setAttribute('aria-hidden', 'true');
+      stamp.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 21c0-4 2-6 5-7-3-1-5-3-5-7-0 4-2 6-5 7 3 1 5 3 5 7z"/></svg>';
+
+      const foot = document.createElement('div');
+      foot.className = 'pc-foot';
+
+      const who = document.createElement('span');
+      who.className = 'pc-name';
+      who.textContent = card.name ? card.name : 'Anonymous';
+      if (!card.name) who.classList.add('is-anon');
+
+      const when = document.createElement('span');
+      when.className = 'pc-date';
+      when.textContent = formatDate(card.created_at);
+
+      foot.append(who, when);
+      article.append(stamp, body, foot);
+      return article;
+    }
+
+    async function loadWall() {
+      try {
+        const res = await fetch(
+          `${REST}?select=name,message,created_at&order=created_at.desc&limit=60`,
+          { headers },
+        );
+        if (!res.ok) throw new Error(String(res.status));
+        const cards = await res.json();
+
+        wallEl.replaceChildren(...cards.map(renderCard));
+        countEl.textContent = cards.length
+          ? `${cards.length} postcard${cards.length === 1 ? '' : 's'} received`
+          : 'No postcards yet — be the first.';
+      } catch {
+        countEl.textContent = 'Could not load the postcards right now.';
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const message = messageEl.value.trim();
+      if (!message) {
+        setStatus('Write something first :)', 'error');
+        return;
+      }
+
+      const name = anonEl.checked ? null : nameEl.value.trim() || null;
+
+      submitEl.disabled = true;
+      setStatus('Sending...', '');
+
+      try {
+        const res = await fetch(REST, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, message }),
+        });
+        if (!res.ok) throw new Error(String(res.status));
+
+        form.reset();
+        nameEl.disabled = false;
+        nameEl.placeholder = 'Your name';
+        counterEl.textContent = '0 / 500';
+        setStatus('Thank you — your postcard is on the wall.', 'ok');
+        await loadWall();
+      } catch {
+        setStatus('Something went wrong. Please try again.', 'error');
+      } finally {
+        submitEl.disabled = false;
+      }
+    });
+
+    loadWall();
+  }
+</script>
+
+<style>
+  .postcards {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 4rem 2.5rem 6rem;
+  }
+
+  h2 {
+    font-size: clamp(2.4rem, 3.4vw, 3.5rem);
+    font-weight: 300;
+    margin-bottom: 0.75rem;
+  }
+
+  .intro {
+    font-size: clamp(1.05rem, 1.2vw, 1.3rem);
+    line-height: 1.7;
+    max-width: 60ch;
+    color: var(--text-secondary);
+    margin-bottom: 2.5rem;
+  }
+
+  .notice {
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+    border: 1px dashed var(--pill-border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+    color: var(--text-secondary);
+  }
+
+  .notice code {
+    font-size: 0.92em;
+  }
+
+  /* ── the postcard you write ─────────────────────────────────────────── */
+
+  .postcard-form {
+    max-width: 620px;
+    margin: 0 auto 4.5rem;
+  }
+
+  .paper {
+    position: relative;
+    background: #f4ece0;
+    border-radius: 3px;
+    padding: 2rem 2rem 1.25rem;
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+  }
+
+  .paper textarea {
+    flex-grow: 1;
+    width: 100%;
+    min-height: 190px;
+    padding-right: 5.5rem;
+    border: none;
+    background: transparent;
+    resize: none;
+    font-family: 'Caveat', 'Jost', cursive;
+    font-size: 1.5rem;
+    line-height: 1.6;
+    color: #3c3230;
+  }
+
+  .paper textarea::placeholder {
+    color: #a3968c;
+  }
+
+  .paper textarea:focus {
+    outline: none;
+  }
+
+  .stamp {
+    position: absolute;
+    top: 1.75rem;
+    right: 1.75rem;
+    width: 62px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #c48d99;
+    border: 2px dashed #d8c9bb;
+    border-radius: 4px;
+  }
+
+  .stamp svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .signature {
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid rgba(60, 50, 48, 0.12);
+    padding-top: 0.85rem;
+  }
+
+  .signature input {
+    border: none;
+    background: transparent;
+    text-align: right;
+    font-family: 'Caveat', 'Jost', cursive;
+    font-size: 1.5rem;
+    color: #3c3230;
+    max-width: 60%;
+  }
+
+  .signature input::placeholder {
+    color: #a3968c;
+  }
+
+  .signature input:focus {
+    outline: none;
+  }
+
+  .signature input:disabled {
+    font-style: italic;
+    opacity: 0.7;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+  }
+
+  .anon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    color: var(--text);
+  }
+
+  .anon input {
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--toggle-bg);
+    cursor: pointer;
+  }
+
+  .counter {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-left: auto;
+  }
+
+  .postcard-form button {
+    background: var(--toggle-bg);
+    color: var(--toggle-icon);
+    border: none;
+    border-radius: 999px;
+    padding: 0.7rem 1.9rem;
+    font-family: inherit;
+    font-size: 1.02rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color var(--theme-fade) var(--theme-ease),
+                color var(--theme-fade) var(--theme-ease),
+                transform 200ms var(--theme-ease),
+                opacity 200ms var(--theme-ease);
+  }
+
+  .postcard-form button:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+
+  .postcard-form button:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .status {
+    margin-top: 0.85rem;
+    font-size: 0.98rem;
+    min-height: 1.4em;
+    color: var(--text-secondary);
+  }
+
+  .status[data-kind='ok'] {
+    color: #7fbf8f;
+  }
+
+  .status[data-kind='error'] {
+    color: #e08b95;
+  }
+
+  /* ── the wall of postcards received ─────────────────────────────────── */
+
+  .wall-count {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    margin-bottom: 2rem;
+  }
+
+  .wall {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2.5rem 2rem;
+  }
+
+  .wall :global(.pc) {
+    position: relative;
+    background: #f4ece0;
+    color: #3c3230;
+    border-radius: 3px;
+    padding: 1.6rem 1.6rem 1.1rem;
+    min-height: 210px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+    transition: transform 0.25s ease;
+  }
+
+  /* a little scatter so the wall feels pinned up, not gridded */
+  .wall :global(.pc:nth-child(4n + 1)) { transform: rotate(-1.1deg); }
+  .wall :global(.pc:nth-child(4n + 2)) { transform: rotate(0.8deg); }
+  .wall :global(.pc:nth-child(4n + 3)) { transform: rotate(-0.5deg); }
+  .wall :global(.pc:nth-child(4n + 4)) { transform: rotate(1.2deg); }
+
+  .wall :global(.pc:hover) {
+    transform: rotate(0deg) translateY(-4px);
+  }
+
+  .wall :global(.pc-stamp) {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 44px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #c48d99;
+    border: 2px dashed #d8c9bb;
+    border-radius: 4px;
+  }
+
+  .wall :global(.pc-stamp svg) {
+    width: 20px;
+    height: 20px;
+  }
+
+  .wall :global(.pc-message) {
+    font-family: 'Caveat', 'Jost', cursive;
+    font-size: 1.4rem;
+    line-height: 1.55;
+    padding-right: 3.75rem;
+    flex-grow: 1;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .wall :global(.pc-foot) {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    border-top: 1px solid rgba(60, 50, 48, 0.12);
+    padding-top: 0.7rem;
+  }
+
+  .wall :global(.pc-name) {
+    font-family: 'Caveat', 'Jost', cursive;
+    font-size: 1.35rem;
+    overflow-wrap: anywhere;
+  }
+
+  .wall :global(.pc-name.is-anon) {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.95rem;
+    font-style: italic;
+    opacity: 0.65;
+  }
+
+  .wall :global(.pc-date) {
+    font-size: 0.85rem;
+    opacity: 0.55;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 600px) {
+    .postcards {
+      padding: 3rem 1.5rem 4rem;
+    }
+
+    .paper {
+      padding: 1.5rem 1.5rem 1rem;
+    }
+
+    .counter {
+      margin-left: 0;
+    }
+  }
+</style>

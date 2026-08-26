@@ -17,11 +17,35 @@ const { title = "Rachel" } = Astro.props;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&family=Caveat:wght@400;600&display=swap"
       rel="stylesheet"
     />
+    <script is:inline>
+      // Set the theme before paint to avoid a flash of the wrong colors.
+      (function () {
+        const stored = localStorage.getItem('theme');
+        const theme = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body>
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle light and dark mode">
+      <svg class="icon icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4.5" />
+        <line x1="12" y1="1.5" x2="12" y2="4" />
+        <line x1="12" y1="20" x2="12" y2="22.5" />
+        <line x1="4.2" y1="4.2" x2="5.9" y2="5.9" />
+        <line x1="18.1" y1="18.1" x2="19.8" y2="19.8" />
+        <line x1="1.5" y1="12" x2="4" y2="12" />
+        <line x1="20" y1="12" x2="22.5" y2="12" />
+        <line x1="4.2" y1="19.8" x2="5.9" y2="18.1" />
+        <line x1="18.1" y1="5.9" x2="19.8" y2="4.2" />
+      </svg>
+      <svg class="icon icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20.5 14.5a8.5 8.5 0 0 1-11-11 8.5 8.5 0 1 0 11 11z" />
+      </svg>
+    </button>
     <nav>
       <div class="nav-links">
         <a href="/">Home</a>
@@ -31,6 +55,15 @@ const { title = "Rachel" } = Astro.props;
       </div>
     </nav>
     <slot />
+    <script is:inline>
+      const toggle = document.getElementById('theme-toggle');
+      toggle.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+      });
+    </script>
   </body>
 </html>
 
@@ -41,36 +74,188 @@ const { title = "Rachel" } = Astro.props;
     padding: 0;
   }
 
+  :root {
+    /* Actual rendered nav height, kept in sync with the nav padding + pill
+       size below so the hero can size itself against the remaining screen. */
+    --nav-pad-y: clamp(1.2rem, 2vw, 1.8rem);
+    --nav-h: calc(var(--nav-pad-y) * 2 + 2.7rem);
+
+    /* How long a light/dark change takes to settle. */
+    --theme-fade: 420ms;
+    --theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Both gradients live here unconditionally. CSS cannot interpolate
+       between two gradients, so they are painted as stacked layers and
+       crossfaded by opacity instead of swapped on one element. */
+    --bg-dark: radial-gradient(circle at 0% 0%, #c96f7d 0%, rgba(201, 111, 125, 0) 42%),
+               linear-gradient(135deg, #352a30 0%, #241e22 55%, #2b2226 100%);
+    --bg-light: radial-gradient(circle at 0% 0%, #f5b7c1 0%, rgba(245, 183, 193, 0) 45%),
+                linear-gradient(135deg, #fdeef0 0%, #fdf7f7 55%, #fefbfb 100%);
+  }
+
+  :root[data-theme="dark"] {
+    --bg-base: #241e22;
+    --text: #f4e8ea;
+    --text-secondary: #c9b3b7;
+    --toggle-bg: #d98d99;
+    --toggle-icon: #3a2529;
+    --pill-bg: #2b2226;
+    --pill-border: rgba(255, 255, 255, 0.1);
+    --surface: rgba(255, 255, 255, 0.06);
+    --surface-hover: rgba(255, 255, 255, 0.11);
+    --surface-border: rgba(255, 255, 255, 0.14);
+  }
+
+  :root[data-theme="light"] {
+    --bg-base: #fdf7f7;
+    --text: #4a2f38;
+    --text-secondary: #9a7d84;
+    --toggle-bg: #f5c3cb;
+    --toggle-icon: #4a2f38;
+    --pill-bg: #ffffff;
+    --pill-border: rgba(74, 47, 56, 0.12);
+    --surface: rgba(255, 255, 255, 0.6);
+    --surface-hover: rgba(255, 255, 255, 0.9);
+    --surface-border: rgba(74, 47, 56, 0.12);
+  }
+
+  html {
+    background-color: var(--bg-base);
+  }
+
   html, body {
     min-height: 100%;
     width: 100%;
     font-family: 'Jost', sans-serif;
-    background-color: #8a9e7c;
-    color: white;
+    color: var(--text);
+  }
+
+  body {
+    position: relative;
+    background: transparent;
+  }
+
+  /* The two crossfading background layers. */
+  body::before,
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    transition: opacity var(--theme-fade) var(--theme-ease);
+  }
+
+  body::before {
+    background: var(--bg-light);
+    opacity: 0;
+  }
+
+  body::after {
+    background: var(--bg-dark);
+    opacity: 0;
+  }
+
+  :root[data-theme="light"] body::before,
+  :root[data-theme="dark"] body::after {
+    opacity: 1;
+  }
+
+  /* Everything themed follows along. Longhands, so any element declaring its
+     own `transition` shorthand keeps full control of its own animation. */
+  html,
+  body,
+  body *,
+  body *::before,
+  body *::after {
+    transition-property: color, background-color, border-color, fill, stroke;
+    transition-duration: var(--theme-fade);
+    transition-timing-function: var(--theme-ease);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --theme-fade: 1ms;
+    }
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 50;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    border: none;
+    background: var(--toggle-bg);
+    color: var(--toggle-icon);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background-color var(--theme-fade) var(--theme-ease),
+                color var(--theme-fade) var(--theme-ease),
+                transform 200ms var(--theme-ease);
+  }
+
+  /* Icons are stacked and crossfaded rather than swapped, so the sun and
+     moon rotate past each other instead of popping. */
+  .theme-toggle .icon {
+    position: absolute;
+    width: 1.3rem;
+    height: 1.3rem;
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.4);
+    transition: opacity var(--theme-fade) var(--theme-ease),
+                transform var(--theme-fade) var(--theme-ease);
+  }
+
+  :root[data-theme="light"] .theme-toggle .icon-sun,
+  :root[data-theme="dark"] .theme-toggle .icon-moon {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+
+  .theme-toggle:hover {
+    transform: scale(1.08);
+  }
+
+  .theme-toggle:active {
+    transform: scale(0.94);
   }
 
   nav {
-    background-color: #b0818a;
-    padding: 1.8rem 3.5rem;
+    padding: var(--nav-pad-y) clamp(1.25rem, 4vw, 3.5rem);
   }
 
   .nav-links {
     display: flex;
-    gap: 3.5rem;
+    gap: 0.9rem;
     align-items: center;
     justify-content: center;
+    flex-wrap: wrap;
   }
 
   .nav-links a {
-    color: white;
+    color: var(--text);
     text-decoration: none;
-    font-size: 1.5rem;
-    font-weight: 400;
+    font-size: clamp(1rem, 1.2vw, 1.2rem);
+    font-weight: 500;
     letter-spacing: 0.02em;
-    transition: opacity 0.2s;
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    border-radius: 999px;
+    padding: 0.6rem 1.5rem;
+    transition: background-color var(--theme-fade) var(--theme-ease),
+                color var(--theme-fade) var(--theme-ease),
+                border-color 200ms var(--theme-ease),
+                transform 200ms var(--theme-ease);
   }
 
   .nav-links a:hover {
-    opacity: 0.75;
+    transform: translateY(-2px);
+    border-color: var(--toggle-bg);
   }
 </style>
