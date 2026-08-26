@@ -10,7 +10,8 @@ const githubUsername = 'Rachelailing';
 // ones you want highlighted at the top.
 //   - tags:   small tech labels shown under the title
 //   - link:   repo or live-demo URL (leave '' to hide the link)
-//   - status: 'Ongoing' (amber), 'Completed'/'Shipped'/'MVP' (green),
+//   - status: 'Ongoing'/'Early'/'WIP' (amber), 'Completed'/'Shipped'/'MVP'
+//            (green),
 //            'Paused'/'Planned'/'Archived' (grey). '' hides the badge;
 //            any other word still shows, in the default pink.
 //   - note:   one short line under the description saying where it stands or
@@ -37,13 +38,13 @@ const projects = [
     featured: true,
   },
   {
-    title: 'Project Three',
+    title: 'Trashie',
     description:
-      'Short description of your project — what it does, the problem it solves, and what you learned building it.',
-    tags: ['Python', 'Machine Learning'],
-    link: '',
-    status: '',
-    note: '',
+      'A hackathon concept for smarter waste handling: an AI chatbot that answers recycling questions, camera-based sorting to identify what an item is, and routing to the nearest bin using ultrasonic sensors to tell which bins are already full. Built in Flutter with Riverpod for state.',
+    tags: ['Flutter', 'Dart', 'OpenAI API', 'Mobile'],
+    link: 'https://github.com/rachelailing/make2',
+    status: 'Paused',
+    note: 'The interface and screen flow are built and the GPT chatbot is connected; camera detection and the sorting and routing logic are still ahead.',
     featured: true,
   },
   {
@@ -393,28 +394,30 @@ const langsUrl = (t: { title: string; text: string }) =>
   }
 
   /* One colour per status; anything unrecognised keeps the default dot. */
-  .status-ongoing {
+  .status-ongoing,
+  .status-early,
+  .status-wip {
     color: var(--status-ongoing);
     border-color: color-mix(in srgb, var(--status-ongoing) 40%, transparent);
   }
 
-  .status-ongoing::before {
+  .status-ongoing::before,
+  .status-early::before,
+  .status-wip::before {
     background: var(--status-ongoing);
     animation: status-pulse 2.4s ease-in-out infinite;
   }
 
   .status-completed,
   .status-shipped,
-  .status-mvp,
-  .status-prototype {
+  .status-mvp {
     color: var(--status-done);
     border-color: color-mix(in srgb, var(--status-done) 40%, transparent);
   }
 
   .status-completed::before,
   .status-shipped::before,
-  .status-mvp::before,
-  .status-prototype::before {
+  .status-mvp::before {
     background: var(--status-done);
   }
 
