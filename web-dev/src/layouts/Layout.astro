@@ -49,7 +49,7 @@ const { title = "Rachel" } = Astro.props;
     <nav>
       <div class="nav-links">
         <a href="/">Home</a>
-        <a href="/about">About</a>
+        {/* <a href="/about">About</a> */}
         <a href="/projects">Projects</a>
         <a href="/thoughts">Thoughts</a>
       </div>
@@ -104,6 +104,9 @@ const { title = "Rachel" } = Astro.props;
     --surface: rgba(255, 255, 255, 0.06);
     --surface-hover: rgba(255, 255, 255, 0.11);
     --surface-border: rgba(255, 255, 255, 0.14);
+    --status-ongoing: #e5a76a;
+    --status-done: #7fbf8f;
+    --status-idle: #9a8f92;
   }
 
   :root[data-theme="light"] {
@@ -117,6 +120,9 @@ const { title = "Rachel" } = Astro.props;
     --surface: rgba(255, 255, 255, 0.6);
     --surface-hover: rgba(255, 255, 255, 0.9);
     --surface-border: rgba(74, 47, 56, 0.12);
+    --status-ongoing: #c0803a;
+    --status-done: #4f9c69;
+    --status-idle: #9a7d84;
   }
 
   html {
