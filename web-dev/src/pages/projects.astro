@@ -10,9 +10,11 @@ const githubUsername = 'Rachelailing';
 // ones you want highlighted at the top.
 //   - tags:   small tech labels shown under the title
 //   - link:   repo or live-demo URL (leave '' to hide the link)
-//   - status: 'Ongoing' (amber), 'Completed'/'Shipped' (green),
+//   - status: 'Ongoing' (amber), 'Completed'/'Shipped'/'MVP' (green),
 //            'Paused'/'Planned'/'Archived' (grey). '' hides the badge;
 //            any other word still shows, in the default pink.
+//   - note:   one short line under the description saying where it stands or
+//            what is planned next. '' hides it.
 const projects = [
   {
     title: 'Driver Drowsiness Detection',
@@ -21,15 +23,17 @@ const projects = [
     tags: ['Python', 'MediaPipe', 'scikit-learn', 'Computer Vision'],
     link: 'https://github.com/rachelailing/fyp_drowsiness',
     status: 'Ongoing',
+    note: '',
     featured: true,
   },
   {
-    title: 'Project Two',
+    title: 'Link Up',
     description:
-      'Short description of your project — what it does, the problem it solves, and what you learned building it.',
-    tags: ['Unity', 'C#', 'Game Dev'],
-    link: '',
-    status: '',
+      'A campus side-hustle platform connecting students who want short-term work with people on campus hiring for it. Its core idea is a refundable commitment fee: a student pays a small deposit to lock in a job, and it is returned alongside their pay once the work is approved, which cuts down on no-shows. Built on vanilla JS with Supabase for data and Stripe Checkout through serverless functions for payments.',
+    tags: ['JavaScript', 'Supabase', 'Stripe', 'PostgreSQL'],
+    link: 'https://github.com/rachelailing/link-up',
+    status: 'MVP',
+    note: 'Prototype complete — Phase 2, the student marketplace, is in planning.',
     featured: true,
   },
   {
@@ -39,6 +43,7 @@ const projects = [
     tags: ['Python', 'Machine Learning'],
     link: '',
     status: '',
+    note: '',
     featured: true,
   },
   {
@@ -47,6 +52,7 @@ const projects = [
     tags: ['JavaScript', 'Web'],
     link: '',
     status: '',
+    note: '',
     featured: false,
   },
   {
@@ -55,6 +61,7 @@ const projects = [
     tags: ['Research'],
     link: '',
     status: '',
+    note: '',
     featured: false,
   },
 ];
@@ -137,10 +144,11 @@ const langsUrl = (t: { title: string; text: string }) =>
               <div class="card-head">
                 <h3>{p.title}</h3>
                 {p.status && (
-                  <span class={`status status-${p.status.toLowerCase()}`}>{p.status}</span>
+                  <span class={`status status-${p.status.toLowerCase().replace(/\s+/g, '-')}`}>{p.status}</span>
                 )}
               </div>
               <p>{p.description}</p>
+              {p.note && <p class="note">{p.note}</p>}
               <div class="tags">
                 {p.tags.map((t) => (
                   <span class="tag">{t}</span>
@@ -169,10 +177,11 @@ const langsUrl = (t: { title: string; text: string }) =>
                   <div class="card-head">
                     <h3>{p.title}</h3>
                     {p.status && (
-                      <span class={`status status-${p.status.toLowerCase()}`}>{p.status}</span>
+                      <span class={`status status-${p.status.toLowerCase().replace(/\s+/g, '-')}`}>{p.status}</span>
                     )}
                   </div>
                   <p>{p.description}</p>
+                  {p.note && <p class="note">{p.note}</p>}
                   <div class="tags">
                     {p.tags.map((t) => (
                       <span class="tag">{t}</span>
@@ -395,13 +404,17 @@ const langsUrl = (t: { title: string; text: string }) =>
   }
 
   .status-completed,
-  .status-shipped {
+  .status-shipped,
+  .status-mvp,
+  .status-prototype {
     color: var(--status-done);
     border-color: color-mix(in srgb, var(--status-done) 40%, transparent);
   }
 
   .status-completed::before,
-  .status-shipped::before {
+  .status-shipped::before,
+  .status-mvp::before,
+  .status-prototype::before {
     background: var(--status-done);
   }
 
@@ -429,11 +442,25 @@ const langsUrl = (t: { title: string; text: string }) =>
     }
   }
 
-  .card p {
+  .card > p {
     font-size: 1.02rem;
     line-height: 1.6;
     color: var(--text-secondary);
+  }
+
+  /* Only the description absorbs slack, so cards in a row stay aligned. */
+  .card > p:not(.note) {
     flex-grow: 1;
+  }
+
+  .note {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding-left: 0.75rem;
+    border-left: 2px solid color-mix(in srgb, var(--toggle-bg) 55%, transparent);
+    margin-top: -0.2rem;
   }
 
   .tags {
